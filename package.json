@@ -15,6 +15,7 @@
   "dependencies": {
     "@capacitor/browser": "latest",
     "@capacitor/core": "latest",
+    "@capacitor/ios": "^8.0.0",
     "@capacitor/splash-screen": "latest"
   },
   "devDependencies": {
