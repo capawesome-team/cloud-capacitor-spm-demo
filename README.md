@@ -1,4 +1,4 @@
-# cloud-capacitor-spm-demo
+# cloud-capacitor-spm-demo 
 
 [![Capawesome](https://github.com/capawesome-team/cloud-capacitor-spm-demo/actions/workflows/capawesome.yml/badge.svg)](https://github.com/capawesome-team/cloud-capacitor-spm-demo/actions/workflows/capawesome.yml)
 
