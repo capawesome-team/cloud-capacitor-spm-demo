@@ -33,7 +33,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build Android
         id: build
-        uses: capawesome-team/cloud-build-action@v0.2.0
+        uses: capawesome-team/cloud-build-action@v0.1.1
         with:
           appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
           gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -77,7 +77,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build iOS
-        uses: capawesome-team/cloud-build-action@v0.2.0
+        uses: capawesome-team/cloud-build-action@v0.1.1
         with:
           appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
           gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
