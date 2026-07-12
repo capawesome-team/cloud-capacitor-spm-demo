@@ -52,19 +52,7 @@ jobs:
             const qrCodeUrl = '${{ steps.build.outputs.shareQrCodeUrl }}';
             const shareUrl = '${{ steps.build.outputs.shareUrl }}';
             const sha = (context.payload.pull_request?.head?.sha || context.sha).slice(0, 7);
-            const styleA = [
-              '<!-- style-a -->',
-              '<table><tr>',
-              `<td><a href="${shareUrl}"><img src="${qrCodeUrl}" width="140" alt="QR code" /></a></td>`,
-              '<td>',
-              `<b>📱 Android build #${buildNumber} is ready to test</b><br><br>`,
-              `Scan the QR code or open the <a href="${shareUrl}"><b>share page</b></a> on your device to install the build.<br><br>`,
-              `<sub>Link expires in 30 days · <a href="${buildUrl}">Build details</a></sub>`,
-              '</td>',
-              '</tr></table>',
-            ].join('\n');
-            const styleB = [
-              '<!-- style-b -->',
+            const body = [
               '### 📱 Android build ready to test',
               '',
               '| Build | Commit | Expires |',
@@ -75,47 +63,78 @@ jobs:
               '',
               `**[Open share page →](${shareUrl})**`,
             ].join('\n');
-            const styleC = [
-              '<!-- style-c -->',
-              `📱 **[Install Android build #${buildNumber}](${shareUrl})** — expires in 30 days`,
-              '',
-              '<details><summary>Show QR code</summary>',
-              '<br>',
-              `<a href="${shareUrl}"><img src="${qrCodeUrl}" width="200" alt="QR code" /></a>`,
-              '</details>',
-            ].join('\n');
-            for (const body of [styleA, styleB, styleC]) {
-              if (context.eventName === 'pull_request') {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  body,
-                });
-              } else {
-                await github.rest.repos.createCommitComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  commit_sha: context.sha,
-                  body,
-                });
-              }
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            } else {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body,
+              });
             }
 
   build-ios:
     name: Build iOS
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build iOS
+        id: build
         uses: capawesome-team/cloud-build-action@v0.1.1
         with:
           appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
           gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
           platform: 'ios'
+          share: true
+          shareExpiresInDays: 30
           token: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
           type: 'simulator'
+      - name: Comment share link
+        if: steps.build.outputs.shareUrl != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildNumber = '${{ steps.build.outputs.buildNumber }}';
+            const buildUrl = '${{ steps.build.outputs.buildUrl }}';
+            const qrCodeUrl = '${{ steps.build.outputs.shareQrCodeUrl }}';
+            const shareUrl = '${{ steps.build.outputs.shareUrl }}';
+            const sha = (context.payload.pull_request?.head?.sha || context.sha).slice(0, 7);
+            const body = [
+              '### 📱 iOS build ready to test',
+              '',
+              '| Build | Commit | Expires |',
+              '| --- | --- | --- |',
+              `| [#${buildNumber}](${buildUrl}) | \`${sha}\` | in 30 days |`,
+              '',
+              `[<img src="${qrCodeUrl}" width="140" alt="QR code" />](${shareUrl})`,
+              '',
+              `**[Open share page →](${shareUrl})**`,
+            ].join('\n');
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            } else {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body,
+              });
+            }
