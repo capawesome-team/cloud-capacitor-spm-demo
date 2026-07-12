@@ -12,7 +12,6 @@ on:
   workflow_dispatch:
 
 env:
-  CAPAWESOME_CLI_VERSION: latest
   NODE_VERSION: 24
 
 concurrency:
@@ -24,21 +23,63 @@ jobs:
     name: Build Android
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Authenticate with Capawesome Cloud
-        run: npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} login --token ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
       - name: Build Android
-        run: |
-          npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} apps:builds:create \
-            --app-id ${{ secrets.CAPAWESOME_CLOUD_APP_ID }} \
-            --platform android \
-            --type debug \
-            --git-ref ${{ github.event.pull_request.head.sha || github.sha }} \
-            --yes
+        id: build
+        uses: capawesome-team/cloud-build-action@v0.1.2
+        with:
+          appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
+          gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
+          platform: 'android'
+          share: true
+          shareExpiresInDays: 30
+          token: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
+          type: 'debug'
+      - name: Comment share link
+        if: steps.build.outputs.shareWebUrl != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildNumber = '${{ steps.build.outputs.buildNumber }}';
+            const buildUrl = '${{ steps.build.outputs.buildUrl }}';
+            const qrCodeUrl = '${{ steps.build.outputs.shareQrCodeUrl }}';
+            const shareUrl = '${{ steps.build.outputs.shareWebUrl }}';
+            const expiresAt = '${{ steps.build.outputs.shareExpiresAt }}'.slice(0, 10);
+            const sha = context.payload.pull_request?.head?.sha || context.sha;
+            const commitUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
+            const body = [
+              '### 📱 Android build ready to test',
+              '',
+              '| Build | Commit | Expires |',
+              '| --- | --- | --- |',
+              `| [#${buildNumber}](${buildUrl}) | [\`${sha.slice(0, 7)}\`](${commitUrl}) | ${expiresAt} |`,
+              '',
+              `[<img src="${qrCodeUrl}" width="140" alt="QR code" />](${shareUrl})`,
+              '',
+              `**[Open share page →](${shareUrl})**`,
+            ].join('\n');
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            } else {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body,
+              });
+            }
 
   build-ios:
     name: Build iOS
@@ -49,13 +90,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Authenticate with Capawesome Cloud
-        run: npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} login --token ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
       - name: Build iOS
-        run: |
-          npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} apps:builds:create \
-            --app-id ${{ secrets.CAPAWESOME_CLOUD_APP_ID }} \
-            --platform ios \
-            --type simulator \
-            --git-ref ${{ github.event.pull_request.head.sha || github.sha }} \
-            --yes
+        uses: capawesome-team/cloud-build-action@v0.1.2
+        with:
+          appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
+          gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
+          platform: 'ios'
+          token: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
+          type: 'simulator'
