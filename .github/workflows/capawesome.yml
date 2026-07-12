@@ -51,6 +51,7 @@ jobs:
             const buildUrl = '${{ steps.build.outputs.buildUrl }}';
             const qrCodeUrl = '${{ steps.build.outputs.shareQrCodeUrl }}';
             const shareUrl = '${{ steps.build.outputs.shareWebUrl }}';
+            const expiresAt = '${{ steps.build.outputs.shareExpiresAt }}'.slice(0, 10);
             const sha = context.payload.pull_request?.head?.sha || context.sha;
             const commitUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
             const body = [
@@ -58,7 +59,7 @@ jobs:
               '',
               '| Build | Commit | Expires |',
               '| --- | --- | --- |',
-              `| [#${buildNumber}](${buildUrl}) | [\`${sha.slice(0, 7)}\`](${commitUrl}) | in 30 days |`,
+              `| [#${buildNumber}](${buildUrl}) | [\`${sha.slice(0, 7)}\`](${commitUrl}) | ${expiresAt} |`,
               '',
               `[<img src="${qrCodeUrl}" width="140" alt="QR code" />](${shareUrl})`,
               '',
