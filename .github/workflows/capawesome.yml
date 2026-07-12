@@ -43,6 +43,7 @@ jobs:
           token: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
           type: 'debug'
       - name: Comment share link
+        if: steps.build.outputs.shareUrl != ''
         uses: actions/github-script@v7
         with:
           script: |
