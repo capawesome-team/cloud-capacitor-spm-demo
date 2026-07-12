@@ -12,7 +12,6 @@ on:
   workflow_dispatch:
 
 env:
-  CAPAWESOME_CLI_VERSION: latest
   NODE_VERSION: 24
 
 concurrency:
@@ -24,21 +23,49 @@ jobs:
     name: Build Android
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Authenticate with Capawesome Cloud
-        run: npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} login --token ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
       - name: Build Android
-        run: |
-          npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} apps:builds:create \
-            --app-id ${{ secrets.CAPAWESOME_CLOUD_APP_ID }} \
-            --platform android \
-            --type debug \
-            --git-ref ${{ github.event.pull_request.head.sha || github.sha }} \
-            --yes
+        id: build
+        uses: capawesome-team/cloud-build-action@v0.2.0
+        with:
+          appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
+          gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
+          platform: 'android'
+          share: true
+          shareExpiresInDays: 30
+          token: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
+          type: 'debug'
+      - name: Comment share link
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body =
+              `📱 **Android build \`#${{ steps.build.outputs.buildNumber }}\` ready to test**\n\n` +
+              `![QR code](${{ steps.build.outputs.shareQrCodeUrl }})\n\n` +
+              `Scan the QR code or open the [share page](${{ steps.build.outputs.shareUrl }}) to install the build on your device. ` +
+              `The link expires in 30 days.`;
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            } else {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body,
+              });
+            }
 
   build-ios:
     name: Build iOS
@@ -49,13 +76,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Authenticate with Capawesome Cloud
-        run: npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} login --token ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
       - name: Build iOS
-        run: |
-          npx @capawesome/cli@${{ env.CAPAWESOME_CLI_VERSION }} apps:builds:create \
-            --app-id ${{ secrets.CAPAWESOME_CLOUD_APP_ID }} \
-            --platform ios \
-            --type simulator \
-            --git-ref ${{ github.event.pull_request.head.sha || github.sha }} \
-            --yes
+        uses: capawesome-team/cloud-build-action@v0.2.0
+        with:
+          appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
+          gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
+          platform: 'ios'
+          token: ${{ secrets.CAPAWESOME_CLOUD_TOKEN }}
+          type: 'simulator'
