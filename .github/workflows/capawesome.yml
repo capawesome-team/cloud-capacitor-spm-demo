@@ -51,13 +51,14 @@ jobs:
             const buildUrl = '${{ steps.build.outputs.buildUrl }}';
             const qrCodeUrl = '${{ steps.build.outputs.shareQrCodeUrl }}';
             const shareUrl = '${{ steps.build.outputs.shareUrl }}';
-            const sha = (context.payload.pull_request?.head?.sha || context.sha).slice(0, 7);
+            const sha = context.payload.pull_request?.head?.sha || context.sha;
+            const commitUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
             const body = [
               '### 📱 Android build ready to test',
               '',
               '| Build | Commit | Expires |',
               '| --- | --- | --- |',
-              `| [#${buildNumber}](${buildUrl}) | \`${sha}\` | in 30 days |`,
+              `| [#${buildNumber}](${buildUrl}) | [\`${sha.slice(0, 7)}\`](${commitUrl}) | in 30 days |`,
               '',
               `[<img src="${qrCodeUrl}" width="140" alt="QR code" />](${shareUrl})`,
               '',
@@ -111,13 +112,14 @@ jobs:
             const buildUrl = '${{ steps.build.outputs.buildUrl }}';
             const qrCodeUrl = '${{ steps.build.outputs.shareQrCodeUrl }}';
             const shareUrl = '${{ steps.build.outputs.shareUrl }}';
-            const sha = (context.payload.pull_request?.head?.sha || context.sha).slice(0, 7);
+            const sha = context.payload.pull_request?.head?.sha || context.sha;
+            const commitUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
             const body = [
               '### 📱 iOS build ready to test',
               '',
               '| Build | Commit | Expires |',
               '| --- | --- | --- |',
-              `| [#${buildNumber}](${buildUrl}) | \`${sha}\` | in 30 days |`,
+              `| [#${buildNumber}](${buildUrl}) | [\`${sha.slice(0, 7)}\`](${commitUrl}) | in 30 days |`,
               '',
               `[<img src="${qrCodeUrl}" width="140" alt="QR code" />](${shareUrl})`,
               '',
