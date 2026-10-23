@@ -28,12 +28,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Set up Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build Android
         id: build
-        uses: capawesome-team/cloud-build-action@v0.1.2
+        uses: capawesome-team/cloud-build-action@88ea3cbb889effe3d7259a7a8ace5d6215bf347a # v0.1.2
         with:
           appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
           gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -44,7 +44,7 @@ jobs:
           type: 'debug'
       - name: Comment share link
         if: steps.build.outputs.shareWebUrl != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const buildNumber = '${{ steps.build.outputs.buildNumber }}';
@@ -87,11 +87,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Set up Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build iOS
-        uses: capawesome-team/cloud-build-action@v0.1.2
+        uses: capawesome-team/cloud-build-action@88ea3cbb889effe3d7259a7a8ace5d6215bf347a # v0.1.2
         with:
           appId: ${{ secrets.CAPAWESOME_CLOUD_APP_ID }}
           gitRef: ${{ github.event.pull_request.head.sha || github.sha }}
